@@ -1,5 +1,6 @@
 
-# Weak Supervision
+# Weakly Supervised Fish Segmentation
+
 ### JCU fish
 
 - https://www.dropbox.com/sh/b2jlua76ogyr5rk/AABsJVljG7v2BOunE1k4f_XTa?dl=0
@@ -15,32 +16,15 @@ python trainval.py -e weakly_JCUfish -sb <savedir_base> -d <datadir> -r 1
 python trainval.py -e weakly_JCUfish_aff -sb <savedir_base> -d <datadir> -r 1
 ```
 
-## Pascal with Point Supervision
+# Citation
 
 ```
-python trainval.py -e pascal_weakly -sb <savedir_base> -d <datadir> -r 1
-```
-
-```
-{
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "pascal_weakly",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/trainval.py",
-            "console": "integratedTerminal",
-            "args":[
-                "-e", "pascal_weakly",
-                "-sb", "/mnt/home/results/weak_supervision/",
-                "-d", "/mnt/home/datasets/",
-                "-r", "1"
-        ],
-        },
-    ]
+@misc{laradji2020affinity,
+      title={Affinity LCFCN: Learning to Segment Fish with Weak Supervision}, 
+      author={Issam Laradji and Alzayat Saleh and Pau Rodriguez and Derek Nowrouzezahrai and Mostafa Rahimi Azghadi and David Vazquez},
+      year={2020},
+      eprint={2011.03149},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
 }
 ```
