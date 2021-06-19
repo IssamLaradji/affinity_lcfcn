@@ -2,10 +2,8 @@ import torchvision
 import torch
 from haven import haven_utils as hu
 import numpy as np
-from torchvision.transforms import transforms
-from sklearn.utils import shuffle
 from PIL import Image
-from . import pascal, jcu_fish, cityscapes
+from . import pascal, jcu_fish
 
 from src import utils as ut
 import os
@@ -29,13 +27,6 @@ def get_dataset(dataset_dict, split, datadir, exp_dict, dataset_size=None):
                                 exp_dict=exp_dict,
                                 sbd=exp_dict['dataset'].get('sbd', False))
 
-        if dataset_size is not None and dataset_size.get(split, 'all') != 'all':
-            dataset.dataset.images = dataset.dataset.images[:dataset_size[split]]
-
-    elif name == "cityscapes":
-        datadir_base = '/mnt/datasets/public/issam/'
-        datadir = os.path.join(datadir_base)
-        dataset = cityscapes.CityScapes(split=split, exp_dict=exp_dict)
         if dataset_size is not None and dataset_size.get(split, 'all') != 'all':
             dataset.dataset.images = dataset.dataset.images[:dataset_size[split]]
 

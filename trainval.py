@@ -29,7 +29,7 @@ from torch.utils.data import DataLoader
 cudnn.benchmark = True
 
 
-def trainval(exp_dict, savedir_base, datadir, reset=False, num_workers=0):
+def trainval(exp_dict, savedir, datadir, reset=False, num_workers=0):
     # bookkeepting stuff
     # ==================
     pprint.pprint(exp_dict)
@@ -181,47 +181,23 @@ if __name__ == "__main__":
     parser.add_argument("-j", "--run_jobs", default=0, type=int)
     parser.add_argument("-nw", "--num_workers", type=int, default=0)
 
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
 
-    # Collect experiments
-    # ===================
-    if args.exp_id is not None:
-        # select one experiment
-        savedir = os.path.join(args.savedir_base, args.exp_id)
-        exp_dict = hu.load_json(os.path.join(savedir, "exp_dict.json"))
+    # Load job config to run things on cluster
+    jc = None
+    if os.path.exists('job_config.py'):
+        import job_config
+        jc = job_config.JOB_CONFIG
 
-        exp_list = [exp_dict]
-
+    # 
+    # 9. Launch experiments using magic command
+    if args.exp_group_list is not None:
+        # Get List of experiments
+        exp_list = [e for group in args.exp_group_list for e in exp_configs.EXP_GROUPS[group]]
     else:
-        # select exp group
-        exp_list = []
-        for exp_group_name in args.exp_group_list:
-            exp_list += exp_configs.EXP_GROUPS[exp_group_name]
-
-    # Run experiments
-    # ===============
-    if not args.run_jobs:
-        for exp_dict in exp_list:
-            # do trainval
-            trainval(exp_dict=exp_dict,
-                    savedir_base=args.savedir_base,
-                    datadir=args.datadir,
-                    reset=args.reset,
-                    num_workers=args.num_workers)
-    else:
-        # launch jobs
-        from haven import haven_jobs as hjb
-        import job_configs as jc
-        
-        jm = hjb.JobManager(exp_list=exp_list, 
-                    savedir_base=args.savedir_base, 
-                    account_id=jc.ACCOUNT_ID,
-                    workdir=os.path.dirname(os.path.realpath(__file__)),
-                    job_config=jc.JOB_CONFIG,
-                    )
-
-        command = ('python trainval.py -ei <exp_id> -sb %s -d %s -nw 2' %  
-                  (args.savedir_base, args.datadir))
-        print(command)
-        jm.launch_menu(command=command)
-        
+        exp_list = None 
+    hw.run_wizard(func=trainval, exp_list=exp_list, 
+                  savedir_base=args.savedir_base, 
+                  reset=args.reset,
+                  python_binary_path=args.python_binary_path,
+                  job_config=jc, args=args, use_threads=True)

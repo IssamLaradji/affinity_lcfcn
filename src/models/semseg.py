@@ -3,7 +3,6 @@
 import os, pprint, tqdm
 import numpy as np
 import pandas as pd
-from kornia.geometry.transform import flips
 from haven import haven_utils as hu 
 from haven import haven_img as hi
 import torch

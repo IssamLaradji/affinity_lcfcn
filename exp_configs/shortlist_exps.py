@@ -188,29 +188,29 @@ EXP_GROUPS['fish_shared'] = hu.cartesian_exp_group({
   
     
     
-     [
-        {'name': 'semseg',
-         'loss': 'lcfcn_loss',
-         'base': 'fcn8_vgg16',
-         'n_channels': 3, 
-         'n_classes': 2,
-         'count_mode':1,
-         'with_affinity':True,
-         'shared':True,
-        #  'with_affinity_average':True,
-         } ] +
+    #  [
+    #     {'name': 'semseg',
+    #      'loss': 'lcfcn_loss',
+    #      'base': 'fcn8_vgg16',
+    #      'n_channels': 3, 
+    #      'n_classes': 2,
+    #      'count_mode':1,
+    #      'with_affinity':True,
+    #      'shared':True,
+    #     #  'with_affinity_average':True,
+    #      } ] +
 
-         [
-        {'name': 'semseg',
-         'loss': 'lcfcn_loss',
-         'base': 'fcn8_vgg16',
-         'n_channels': 3, 
-         'n_classes': 2,
-         'count_mode':1,
-        #  'with_affinity':True,
-         'shared':True,
-        #  'with_affinity_average':True,
-         } ] + 
+        #  [
+        # {'name': 'semseg',
+        #  'loss': 'lcfcn_loss',
+        #  'base': 'fcn8_vgg16',
+        #  'n_channels': 3, 
+        #  'n_classes': 2,
+        #  'count_mode':1,
+        # #  'with_affinity':True,
+        #  'shared':True,
+        # #  'with_affinity_average':True,
+        #  } ] + 
 
     # [
     #     {'name': 'semseg',
@@ -309,15 +309,15 @@ EXP_GROUPS['fish_pseudo'] = hu.cartesian_exp_group({
     'optimizer': ["adam"],
     'lr': [ 1e-5],
     'model':
-    [
-        {'name': 'semseg',
-         'loss': l,
-         'base': 'fcn8_vgg16',
-         'n_channels': 3, 
-         'n_classes': 2,
-          'shared':True,
-         'count_mode':1,
-         } for l in ['pseudo_mask', ]] +
+    # [
+    #     {'name': 'semseg',
+    #      'loss': l,
+    #      'base': 'fcn8_vgg16',
+    #      'n_channels': 3, 
+    #      'n_classes': 2,
+    #       'shared':True,
+    #      'count_mode':1,
+    #      } for l in ['pseudo_mask', ]] +
          
     [
         {'name': 'semseg',
