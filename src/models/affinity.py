@@ -5,8 +5,8 @@ import numpy as np
 # import sys, os
 # from ..misc import torchutils
 from src.misc import pyutils, torchutils, indexing, imutils
-import src.datasets.voc12
-import src.datasets.voc12.dataloader
+
+
 import skimage
 import torch
 # from src.misc import indexing

@@ -29,19 +29,7 @@ from torch.utils.data import DataLoader
 cudnn.benchmark = True
 
 
-def trainval(exp_dict, savedir, datadir, reset=False, num_workers=0):
-    # bookkeepting stuff
-    # ==================
-    pprint.pprint(exp_dict)
-    exp_id = hu.hash_dict(exp_dict)
-    savedir = os.path.join(savedir_base, exp_id)
-    if reset:
-        hc.delete_and_backup_experiment(savedir)
-
-    os.makedirs(savedir, exist_ok=True)
-    hu.save_json(os.path.join(savedir, "exp_dict.json"), exp_dict)
-    print("Experiment saved in %s" % savedir)
-
+def trainval(exp_dict, savedir, args):
     # set seed
     # ==================
     seed = 42
@@ -51,6 +39,7 @@ def trainval(exp_dict, savedir, datadir, reset=False, num_workers=0):
 
     # Dataset
     # ==================
+    datadir = args.datadir
     # train set
     train_set = datasets.get_dataset(dataset_dict=exp_dict["dataset"],
                                      split="train",
@@ -76,13 +65,13 @@ def trainval(exp_dict, savedir, datadir, reset=False, num_workers=0):
                             # sampler=val_sampler,
                             batch_size=1,
                             collate_fn=ut.collate_fn,
-                            num_workers=num_workers)
+                            num_workers=args.num_workers)
 
     test_loader = DataLoader(test_set,
                             # sampler=val_sampler,
                             batch_size=1,
                             collate_fn=ut.collate_fn,
-                            num_workers=num_workers)
+                            num_workers=args.num_workers)
 
     # Model
     # ==================
@@ -119,7 +108,7 @@ def trainval(exp_dict, savedir, datadir, reset=False, num_workers=0):
                             collate_fn=ut.collate_fn,
                             batch_size=exp_dict["batch_size"], 
                             drop_last=True, 
-                            num_workers=num_workers)
+                            num_workers=args.num_workers)
     
     for e in range(s_epoch, exp_dict['max_epoch']):
         # Validate only at the start of each cycle
@@ -171,6 +160,7 @@ def trainval(exp_dict, savedir, datadir, reset=False, num_workers=0):
 
 
 if __name__ == "__main__":
+    from haven import haven_wizard as hw
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-e', '--exp_group_list', nargs="+")
@@ -185,9 +175,9 @@ if __name__ == "__main__":
 
     # Load job config to run things on cluster
     jc = None
-    if os.path.exists('job_config.py'):
-        import job_config
-        jc = job_config.JOB_CONFIG
+    if os.path.exists('job_configs.py'):
+        import job_configs
+        jc = job_configs.JOB_CONFIG
 
     # 
     # 9. Launch experiments using magic command
@@ -199,5 +189,5 @@ if __name__ == "__main__":
     hw.run_wizard(func=trainval, exp_list=exp_list, 
                   savedir_base=args.savedir_base, 
                   reset=args.reset,
-                  python_binary_path=args.python_binary_path,
+                  python_binary_path= "/mnt/home/miniconda3/bin/python",
                   job_config=jc, args=args, use_threads=True)

@@ -1,19 +1,18 @@
 import os
 
 
-ACCOUNT_ID = os.environ['EAI_ACCOUNT_ID'] 
-
-JOB_CONFIG = {
-                                'image': 'registry.console.elementai.com/%s/ssh' % os.environ['EAI_ACCOUNT_ID'] ,
-                                'data': [
-                                         'eai.colab.public:/mnt/public',
-                                         ],
-                                'restartable':True,
-                                'resources': {
-                                    'cpu': 4,
-                                    'mem': 8,
-                                    'gpu': 1
-                                },
-                                'interactive': False,
-                                'bid': 5000,
-                                }
+JOB_CONFIG =  {'account_id':os.environ['EAI_ACCOUNT_ID'] ,
+            'image': 'registry.console.elementai.com/snow.colab/ssh',
+            'data': [   'snow.issam.home:/mnt/home',
+                        'snow.colab.public:/mnt/public',
+                        ],
+            'restartable':True,
+            'resources': {
+                'cpu': 4,
+                'mem': 40,
+                'gpu': 1,
+                'gpu_model':'P100'
+            },
+            'interactive': False,
+            'bid':9999,
+            }

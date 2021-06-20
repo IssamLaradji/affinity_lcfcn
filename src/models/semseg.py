@@ -2,31 +2,23 @@
 
 import os, pprint, tqdm
 import numpy as np
-import pandas as pd
 from haven import haven_utils as hu 
-from haven import haven_img as hi
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .networks import infnet, fcn8_vgg16, unet_resnet, resnet_seam
 from src import utils as ut
 from src import models
 from . import losses
 from src.modules.lcfcn import lcfcn_loss
-import sys
-from scripts.SEAM.network import resnet38_SEAM, resnet38_aff
-
-try:
-    import kornia
-    from kornia.augmentation import RandomAffine
-    from kornia.geometry.transform import flips
-except:
-    print('kornia not installed')
-    
-from scipy.ndimage.filters import gaussian_filter
+from skimage import segmentation
+from skimage.segmentation import expand_labels
+from skimage.color import label2rgb
 
 from . import optimizers, metrics, networks
-from src.modules import sstransforms as sst
+
+DEVICE = 'cpu'
+if torch.cuda.is_available():
+    DEVICE = 'cuda'
 
 def distance(x1, x2):
     diff = torch.abs(x1 - x2)
@@ -212,34 +204,32 @@ class SemSeg(torch.nn.Module):
 
         return res 
 
+    @torch.no_grad()
     def vis_on_batch(self, batch, savedir_image):
-        image = batch['images']
-        original = hu.denormalize(image, mode='rgb')[0]
-        gt = np.asarray(batch['masks'])
+        self.eval()
+        images = batch["images"].to(DEVICE)
+        points = batch["points"].long().to(DEVICE)
+        logits = self.model_base.forward(images)
+        probs = logits.sigmoid().cpu().numpy()
 
-        image = F.interpolate(image, size=gt.shape[-2:], mode='bilinear', align_corners=False)
-        img_pred = hu.save_image(savedir_image,
-                    original,
-                      mask=self.predict_on_batch(batch), return_image=True)
+        blobs = lcfcn_loss.get_blobs(probs=probs[0,1])
 
-        img_gt = hu.save_image(savedir_image,
-                     original,
-                      mask=gt, return_image=True)
-        img_gt = models.text_on_image( 'Groundtruth', np.array(img_gt), color=(0,0,0))
-        img_pred = models.text_on_image( 'Prediction', np.array(img_pred), color=(0,0,0))
+        pred_counts = (np.unique(blobs)!=0).sum()
+        pred_blobs = blobs
+        pred_probs = probs.squeeze()
+
+        # loc 
+        pred_count = pred_counts.ravel()[0]
+        pred_blobs = pred_blobs.squeeze()
+        pred_points = lcfcn_loss.blobs2points(pred_blobs).squeeze()
+        img_org = hu.get_image(batch["images"],denorm="rgb")
+
+        i1 = convert(np.array(img_org), batch['points'][0], enlarge=20)
+        i2 = convert(np.array(img_org), pred_blobs, enlarge=0)
+        i3 = convert(np.array(img_org), pred_points, enlarge=20)
         
-        if 'points' in batch:
-            pts = (batch['points'][0].numpy().copy()).astype('uint8')
-            # pts[pts == 1] = 2
-            # pts[pts == 0] = 1
-            pts[pts != 255] = 1
-            pts[pts == 255] = 0
-            img_gt = np.array(hu.save_image(savedir_image, img_gt/255.,
-                                points=pts.squeeze(), 
-                                radius=2, return_image=True))
-        img_list = [np.array(img_gt), np.array(img_pred)]
-        hu.save_image(savedir_image, np.hstack(img_list))
-        # hu.save_image('.tmp/pred.png', np.hstack(img_list))
+        
+        hu.save_image(savedir_image, np.hstack([i1, i2, i3]))
 
     def val_on_loader(self, loader, savedir_images=None, n_images=0):
         self.eval()
@@ -314,6 +304,16 @@ class SemSeg(torch.nn.Module):
         return score_map 
 
 
+def convert(img, mask, enlarge=0):
+    if enlarge != 0:
+        mask = expand_labels(mask, enlarge).astype('uint8')
+    m = label2rgb(mask, bg_label=0)
+    m = segmentation.mark_boundaries(m, mask.astype('uint8'))
+    i = 0.5 * np.array(img) / 255.
+    ind = m != 0
+    i[ind] = m[ind] 
+
+    return i
 
 class TrainMonitor:
     def __init__(self):
