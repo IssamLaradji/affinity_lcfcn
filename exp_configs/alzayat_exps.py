@@ -159,8 +159,8 @@ EXP_GROUPS["weakly_SUMfish"] = hu.cartesian_exp_group({
 
     ],
     'dataset_size': [
-        #  {'train':10, 'val':10, 'test':10},
-        {'train': 'all', 'val': 'all'},
+         {'train':10, 'val':10, 'test':10},
+        # {'train': 'all', 'val': 'all'},
     ],
     'max_epoch': [100],
     'optimizer': ["adam"],

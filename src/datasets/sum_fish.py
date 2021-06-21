@@ -36,7 +36,7 @@ class SumFish(data.Dataset):
         if split == 'train':
             self.count_mode = exp_dict['model'].get('count_mode')
             # self.img_names, self.labels, self.mask_names = get_seg_data(datadir, split, habitat=habitat)
-            self.img_names, self.labels, self.mask_names = get_sum_data(datadir)
+            self.img_names, self.labels, self.mask_names = get_sum_data(datadir, "train_val")
             if self.count_mode:
                 self.path = os.path.join(datadir, 'Localization')
                 self.img_names, self.labels, self.counts, self.points_names = get_loc_data(os.path.join(datadir, 'Localization'), split, habitat=habitat)
@@ -66,11 +66,11 @@ class SumFish(data.Dataset):
 
         elif split == 'val':
             # self.img_names, self.labels, self.mask_names = get_seg_data(datadir, split, habitat=habitat)
-            self.img_names, self.labels, self.mask_names = get_sum_data(datadir)
+            self.img_names, self.labels, self.mask_names = get_sum_data(datadir, "TEST")
             # self.img_names_other, self.labels_other= get_clf_data(datadir, split, habitat=habitat)
 
         elif split == 'test':
-            self.img_names, self.labels, self.mask_names = get_sum_data(datadir)
+            self.img_names, self.labels, self.mask_names = get_sum_data(datadir, "TEST")
             # self.img_names_other, self.labels_other= get_clf_data(datadir, split, habitat=habitat)
 
         self.size = 256
@@ -95,7 +95,7 @@ class SumFish(data.Dataset):
         self.img_transform = transforms.Compose([
             transforms.Resize(self.size, interpolation=Image.BILINEAR),
             transforms.ToTensor(),
-            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ])
 
        
@@ -163,17 +163,24 @@ class SumFish(data.Dataset):
         if self.count_mode:
             return self.__getitem__loc(index)
         # Segmentation
-        image = binary_loader(os.path.join(self.datadir, "train_val/images", self.images[index]))
-        gt = binary_loader(os.path.join(self.datadir, "train_val/masks", self.gts[index]))
+        if self.split == 'train':
+            image = rgb_loader(os.path.join(self.datadir, "train_val/images", self.images[index]))
+            gt = rgb_loader(os.path.join(self.datadir, "train_val/masks", self.gts[index]))
+        elif self.split == 'val' or 'test':
+            image = rgb_loader(os.path.join(self.datadir, "TEST/images", self.images[index]))
+            gt = rgb_loader(os.path.join(self.datadir, "TEST/masks", self.gts[index]))
+
         original = copy.deepcopy(image)
 
         image = self.img_transform(image)
         gt = self.gt_transform(gt)
         # gt = self.img_transform(gt)
+        gt_name = self.gts[index]
         gt = np.array(gt)
-        # gt[gt==255] = 1
+        gt = gt[:,:,0]
+        gt[gt==255] = 1
 
-        image,gt =  processSUIMDataRFHW(image, gt, sal=False)
+        # image,gt =  processSUIMDataRFHW(image, gt, sal=False)
 
         img_size = (gt.shape[0], gt.shape[1])
 
@@ -181,7 +188,8 @@ class SumFish(data.Dataset):
         # image_other = rgb_loader(os.path.join(self.datadir, "Classification", self.images_other[index] + '.jpg'))
         # image_other = self.img_transform(image_other)
         
-        points = lcfcn_loss.get_points_from_mask(gt, bg_points=-1)
+        # points = lcfcn_loss.get_points_from_mask(gt, bg_points=-1)
+        points = lcfcn_loss.get_points_from_mask(gt, bg_points=0)
         # hu.save_image('tmp.png', hu.denormalize(image, 'rgb'), points=points, radius=2)
         # hu.save_image('tmp.png', hu.denormalize(image, 'rgb'), mask=gt.numpy(), radius=2)
         uniques = np.unique(points)
@@ -207,7 +215,8 @@ class SumFish(data.Dataset):
                  'meta': {'name': self.images[index],
                           'hash': hu.hash_dict({'id': self.images[index]}),
                           # 'hash':self.images[index],
-                          'habitat':self.habitats[index],
+                          'habitat':"habitats",
+                          # 'habitat':self.habitats[index],
                           'shape': gt.squeeze().shape,
                           'index': index,
                           'split': self.split,
@@ -246,9 +255,9 @@ def get_seg_data(path_base, split,  habitat=None ):
     return img_names, labels, mask_names
 
 # for sum,
-def get_sum_data(path_base):
-    img = os.listdir(os.path.join(path_base,  'train_val/images/' ))
-    msk = os.listdir(os.path.join(path_base,  'train_val/masks/' ))
+def get_sum_data(path_base, splits):
+    img = os.listdir(os.path.join(path_base,  '%s/images/' % splits ))
+    msk = os.listdir(os.path.join(path_base,  '%s/masks/' % splits ))
     # df = slice_df_reg(df, habitat)
     img_names = np.array(img)
     mask_names = np.array(msk)
