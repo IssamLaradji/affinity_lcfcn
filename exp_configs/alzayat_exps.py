@@ -149,6 +149,43 @@ EXP_GROUPS["weakly_JCUfish"] = hu.cartesian_exp_group({
     ]
 })
 
+EXP_GROUPS["weakly_SUMfish"] = hu.cartesian_exp_group({
+    'batch_size': [1],
+    'num_channels': 1,
+    'dataset': [
+        {'name': 'SumFish', 'n_classes': 2},
+        # {'name': 'covid19_v2', 'n_classes': 2},
+        # {'name':'covid19', 'n_classes':2},
+
+    ],
+    'dataset_size': [
+        #  {'train':10, 'val':10, 'test':10},
+        {'train': 'all', 'val': 'all'},
+    ],
+    'max_epoch': [100],
+    'optimizer': ["adam"],
+    'lr': [1e-5, ],
+    'model': [
+         {'name': 'semseg', 'loss': 'rot_point_loss',
+         'base': 'fcn8_vgg16',
+         'n_channels': 3, 'n_classes': 2},
+
+        {'name': 'semseg', 'loss': 'cons_point_loss',
+         'base': 'fcn8_vgg16',
+         'n_channels': 3, 'n_classes': 2},
+
+        {'name': 'semseg', 'loss': 'point_level',
+         'base': 'fcn8_vgg16',
+         'n_channels': 3, 'n_classes': 2},
+
+        {'name': 'semseg', 'loss': 'cross_entropy',
+         'base': 'fcn8_vgg16',
+         'n_channels': 3, 'n_classes': 2},
+    ]
+})
+
+
+
 EXP_GROUPS["weakly_JCUfish_aff"] = hu.cartesian_exp_group({
     'batch_size': [1],
     'num_channels': 1,

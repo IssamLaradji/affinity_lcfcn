@@ -5,7 +5,7 @@ import numpy as np
 from torchvision.transforms import transforms
 from sklearn.utils import shuffle
 from PIL import Image
-from . import pascal, jcu_fish, cityscapes
+from . import pascal, jcu_fish, cityscapes, sum_fish
 
 from src import utils as ut
 import os
@@ -46,7 +46,15 @@ def get_dataset(dataset_dict, split, datadir, exp_dict, dataset_size=None):
         dataset = jcu_fish.JcuFish(split=split,  datadir=datadir, exp_dict=exp_dict)
         if dataset_size is not None and dataset_size.get(split, 'all') != 'all':
             dataset.dataset_size = dataset_size[split]
-     
+
+    elif name == "SumFish":
+        possible_datadir = ('/mnt/datasets/public/issam/data/medical/SUIM_Fish_data/train_val')
+        if os.path.exists(possible_datadir):
+            datadir = possible_datadir
+        dataset = sum_fish.SumFish(split=split,  datadir=datadir, exp_dict=exp_dict)
+        if dataset_size is not None and dataset_size.get(split, 'all') != 'all':
+            dataset.dataset_size = dataset_size[split]
+
     else:
         raise ValueError('dataset %s not found' % name)
 
