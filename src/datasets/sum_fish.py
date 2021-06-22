@@ -73,7 +73,8 @@ class SumFish(data.Dataset):
             self.img_names, self.labels, self.mask_names = get_sum_data(datadir, "TEST")
             # self.img_names_other, self.labels_other= get_clf_data(datadir, split, habitat=habitat)
 
-        self.size = 256
+        # self.size = 256
+        self.size = (256,256)
         # self.images = [x for x in self.img_names if x not in bug_images_list]
         self.images =  self.img_names
         self.gts = self.mask_names
@@ -177,10 +178,16 @@ class SumFish(data.Dataset):
         # gt = self.img_transform(gt)
         gt_name = self.gts[index]
         gt = np.array(gt)
-        gt = gt[:,:,0]
-        gt[gt==255] = 1
+        # gt = gt[:,:,0]
+        # gt[gt==255] = 1
 
         # image,gt =  processSUIMDataRFHW(image, gt, sal=False)
+        image,gt =  processSUIMDfish(image, gt)
+
+        if np.sum(gt):
+            labels = 1
+        else:
+            labels = 0
 
         img_size = (gt.shape[0], gt.shape[1])
 
@@ -188,8 +195,7 @@ class SumFish(data.Dataset):
         # image_other = rgb_loader(os.path.join(self.datadir, "Classification", self.images_other[index] + '.jpg'))
         # image_other = self.img_transform(image_other)
         
-        # points = lcfcn_loss.get_points_from_mask(gt, bg_points=-1)
-        points = lcfcn_loss.get_points_from_mask(gt, bg_points=0)
+        points = lcfcn_loss.get_points_from_mask(gt, bg_points=-1)
         # hu.save_image('tmp.png', hu.denormalize(image, 'rgb'), points=points, radius=2)
         # hu.save_image('tmp.png', hu.denormalize(image, 'rgb'), mask=gt.numpy(), radius=2)
         uniques = np.unique(points)
@@ -206,7 +212,7 @@ class SumFish(data.Dataset):
                  'original':original,
                  'masks': torch.as_tensor(gt).long(),
                  'points': torch.LongTensor(points),
-                 'label' : torch.from_numpy(np.ndarray([self.labels[index]])),
+                 'label' : torch.from_numpy(np.ndarray([labels])),
                 #  "labels_other": float(self.labels_other[index] > 0),
                  'size': img_size,
 
@@ -258,7 +264,8 @@ def get_seg_data(path_base, split,  habitat=None ):
 def get_sum_data(path_base, splits):
     img = os.listdir(os.path.join(path_base,  '%s/images/' % splits ))
     msk = os.listdir(os.path.join(path_base,  '%s/masks/' % splits ))
-    # df = slice_df_reg(df, habitat)
+    img = [x for x in img if x.endswith(".jpg")]
+    msk = [x for x in msk if x.endswith(".bmp")]
     img_names = np.array(img)
     mask_names = np.array(msk)
     labels = np.array([1 for x in img])
@@ -312,105 +319,130 @@ def slice_df(df, habitat):
 # "9894_gerres_2_f000010"
 # ]
 
+#
+#
+# def getPaths(data_dir):
+#     # read image files from directory
+#     exts = ['*.png','*.PNG','*.jpg','*.JPG', '*.JPEG', '*.bmp']
+#     image_paths = []
+#     for pattern in exts:
+#         for d, s, fList in os.walk(data_dir):
+#             for filename in fList:
+#                 if (fnmatch.fnmatch(filename, pattern)):
+#                     fname_ = os.path.join(d,filename)
+#                     image_paths.append(fname_)
+#     return image_paths
+#
+# def getSaliency(mask):
+#     # one combined category: HD/RO/FV/WR
+#     imw, imh = mask.shape[0], mask.shape[1]
+#     sal = np.zeros((imw, imh))
+#     for i in range(imw):
+#         for j in range(imh):
+#             if (mask[i,j,0]==0 and mask[i,j,1]==0 and mask[i,j,2]==1):
+#                 sal[i, j] = 1
+#             elif (mask[i,j,0]==1 and mask[i,j,1]==0 and mask[i,j,2]==0):
+#                 sal[i, j] = 1
+#             elif (mask[i,j,0]==1 and mask[i,j,1]==1 and mask[i,j,2]==0):
+#                 sal[i, j] = 1
+#             elif (mask[i,j,0]==0 and mask[i,j,1]==1 and mask[i,j,2]==1):
+#                 sal[i, j] = 0.8
+#             else: pass
+#     return np.expand_dims(sal, axis=-1)
+
+# """
+# RGB color code and object categories:
+# ------------------------------------
+# 000 BW: Background waterbody
+# 001 HD: Human divers
+# 010 PF: Plants/sea-grass
+# 011 WR: Wrecks/ruins
+# 100 RO: Robots/instruments
+# 101 RI: Reefs and invertebrates
+# 110 FV: Fish and vertebrates
+# 111 SR: Sand/sea-floor (& rocks)
+# """
+# def getRobotFishHumanReefWrecks(mask):
+#     # for categories: HD, RO, FV, WR, RI
+#     imw, imh = mask.shape[0], mask.shape[1]
+#     Human = np.zeros((imw, imh))
+#     Robot = np.zeros((imw, imh))
+#     Fish = np.zeros((imw, imh))
+#     Reef = np.zeros((imw, imh))
+#     Wreck = np.zeros((imw, imh))
+#     for i in range(imw):
+#         for j in range(imh):
+#             if (mask[i,j,0]==0 and mask[i,j,1]==0 and mask[i,j,2]==1):
+#                 Human[i, j] = 1
+#             elif (mask[i,j,0]==1 and mask[i,j,1]==0 and mask[i,j,2]==0):
+#                 Robot[i, j] = 1
+#             elif (mask[i,j,0]==1 and mask[i,j,1]==1 and mask[i,j,2]==0):
+#                 Fish[i, j] = 1
+#             elif (mask[i,j,0]==1 and mask[i,j,1]==0 and mask[i,j,2]==1):
+#                 Reef[i, j] = 1
+#             elif (mask[i,j,0]==0 and mask[i,j,1]==1 and mask[i,j,2]==1):
+#                 Wreck[i, j] = 1
+#             else: pass
+#     return np.stack((Robot, Fish, Human, Reef, Wreck), -1)
+#
+# def getRobotFishHumanWrecks(mask):
+#     # for categories: HD, RO, FV, WR
+#     imw, imh = mask.shape[0], mask.shape[1]
+#     Human = np.zeros((imw, imh))
+#     Robot = np.zeros((imw, imh))
+#     Fish = np.zeros((imw, imh))
+#     Wreck = np.zeros((imw, imh))
+#     for i in range(imw):
+#         for j in range(imh):
+#             if (mask[i,j,0]==0 and mask[i,j,1]==0 and mask[i,j,2]==1):
+#                 Human[i, j] = 1
+#             elif (mask[i,j,0]==1 and mask[i,j,1]==0 and mask[i,j,2]==0):
+#                 Robot[i, j] = 1
+#             elif (mask[i,j,0]==1 and mask[i,j,1]==1 and mask[i,j,2]==0):
+#                 Fish[i, j] = 1
+#             elif (mask[i,j,0]==0 and mask[i,j,1]==1 and mask[i,j,2]==1):
+#                 Wreck[i, j] = 1
+#             else: pass
+#     return np.stack((Robot, Fish, Human, Wreck), -1)
+#
+# def processSUIMDataRFHW(img, mask, sal=False):
+#     # scaling image data and masks
+#     img = img / 255
+#     mask = mask /255
+#     mask[mask > 0.5] = 1
+#     mask[mask <= 0.5] = 0
+#     m = []
+#     for i in range(mask.shape[0]):
+#         if sal:
+#             m.append(getSaliency(mask[i]))
+#         else:
+#             m.append(getRobotFishHumanReefWrecks(mask[i]))
+#             #m.append(getRobotFishHumanWrecks(mask[i]))
+#     m = np.array(m)
+#     return (img, m)
 
 
-def getPaths(data_dir):
-    # read image files from directory
-    exts = ['*.png','*.PNG','*.jpg','*.JPG', '*.JPEG', '*.bmp']
-    image_paths = []
-    for pattern in exts:
-        for d, s, fList in os.walk(data_dir):
-            for filename in fList:
-                if (fnmatch.fnmatch(filename, pattern)):
-                    fname_ = os.path.join(d,filename)
-                    image_paths.append(fname_)
-    return image_paths
 
-def getSaliency(mask):
-    # one combined category: HD/RO/FV/WR
+def getFish(mask):
     imw, imh = mask.shape[0], mask.shape[1]
-    sal = np.zeros((imw, imh))
-    for i in range(imw):
-        for j in range(imh):
-            if (mask[i,j,0]==0 and mask[i,j,1]==0 and mask[i,j,2]==1):
-                sal[i, j] = 1
-            elif (mask[i,j,0]==1 and mask[i,j,1]==0 and mask[i,j,2]==0):
-                sal[i, j] = 1
-            elif (mask[i,j,0]==1 and mask[i,j,1]==1 and mask[i,j,2]==0):
-                sal[i, j] = 1
-            elif (mask[i,j,0]==0 and mask[i,j,1]==1 and mask[i,j,2]==1):
-                sal[i, j] = 0.8
-            else: pass
-    return np.expand_dims(sal, axis=-1)
-
-"""
-RGB color code and object categories:
-------------------------------------
-000 BW: Background waterbody
-001 HD: Human divers
-010 PF: Plants/sea-grass
-011 WR: Wrecks/ruins
-100 RO: Robots/instruments
-101 RI: Reefs and invertebrates
-110 FV: Fish and vertebrates
-111 SR: Sand/sea-floor (& rocks)
-"""
-def getRobotFishHumanReefWrecks(mask):
-    # for categories: HD, RO, FV, WR, RI
-    imw, imh = mask.shape[0], mask.shape[1]
-    Human = np.zeros((imw, imh))
-    Robot = np.zeros((imw, imh))
     Fish = np.zeros((imw, imh))
-    Reef = np.zeros((imw, imh))
-    Wreck = np.zeros((imw, imh))
     for i in range(imw):
         for j in range(imh):
-            if (mask[i,j,0]==0 and mask[i,j,1]==0 and mask[i,j,2]==1):
-                Human[i, j] = 1
-            elif (mask[i,j,0]==1 and mask[i,j,1]==0 and mask[i,j,2]==0):
-                Robot[i, j] = 1
-            elif (mask[i,j,0]==1 and mask[i,j,1]==1 and mask[i,j,2]==0):
+            if (mask[i,j,0]==1 and mask[i,j,1]==1 and mask[i,j,2]==0):
                 Fish[i, j] = 1
-            elif (mask[i,j,0]==1 and mask[i,j,1]==0 and mask[i,j,2]==1):
-                Reef[i, j] = 1
-            elif (mask[i,j,0]==0 and mask[i,j,1]==1 and mask[i,j,2]==1):
-                Wreck[i, j] = 1
             else: pass
-    return np.stack((Robot, Fish, Human, Reef, Wreck), -1)
+    return  Fish
 
-def getRobotFishHumanWrecks(mask):
-    # for categories: HD, RO, FV, WR
-    imw, imh = mask.shape[0], mask.shape[1]
-    Human = np.zeros((imw, imh))
-    Robot = np.zeros((imw, imh))
-    Fish = np.zeros((imw, imh))
-    Wreck = np.zeros((imw, imh))
-    for i in range(imw):
-        for j in range(imh):
-            if (mask[i,j,0]==0 and mask[i,j,1]==0 and mask[i,j,2]==1):
-                Human[i, j] = 1
-            elif (mask[i,j,0]==1 and mask[i,j,1]==0 and mask[i,j,2]==0):
-                Robot[i, j] = 1
-            elif (mask[i,j,0]==1 and mask[i,j,1]==1 and mask[i,j,2]==0):
-                Fish[i, j] = 1
-            elif (mask[i,j,0]==0 and mask[i,j,1]==1 and mask[i,j,2]==1):
-                Wreck[i, j] = 1
-            else: pass
-    return np.stack((Robot, Fish, Human, Wreck), -1)
 
-def processSUIMDataRFHW(img, mask, sal=False):
+def processSUIMDfish(img, mask):
     # scaling image data and masks
     img = img / 255
     mask = mask /255
     mask[mask > 0.5] = 1
     mask[mask <= 0.5] = 0
-    m = []
-    for i in range(mask.shape[0]):
-        if sal:
-            m.append(getSaliency(mask[i]))
-        else:
-            m.append(getRobotFishHumanReefWrecks(mask[i]))
-            #m.append(getRobotFishHumanWrecks(mask[i]))
+    m = getFish(mask)
     m = np.array(m)
     return (img, m)
 
+
+""" python trainval.py -e weakly_SUMfish -sb <savedir_base> -d <datadir> -r 1"""
