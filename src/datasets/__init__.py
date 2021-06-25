@@ -3,7 +3,7 @@ import torch
 from haven import haven_utils as hu
 import numpy as np
 from PIL import Image
-from . import pascal, jcu_fish
+from . import pascal, jcu_fish, sum_fish
 
 from src import utils as ut
 import os
@@ -37,7 +37,15 @@ def get_dataset(dataset_dict, split, datadir, exp_dict, dataset_size=None):
         dataset = jcu_fish.JcuFish(split=split,  datadir=datadir, exp_dict=exp_dict)
         if dataset_size is not None and dataset_size.get(split, 'all') != 'all':
             dataset.dataset_size = dataset_size[split]
-     
+    
+    elif name == "SumFish":
+        possible_datadir = ('/mnt/public/datasets/SumFish')
+        if os.path.exists(possible_datadir):
+            datadir = possible_datadir
+        dataset = sum_fish.SumFish(split=split,  datadir=datadir, exp_dict=exp_dict)
+        if dataset_size is not None and dataset_size.get(split, 'all') != 'all':
+            dataset.dataset_size = dataset_size[split]
+
     else:
         raise ValueError('dataset %s not found' % name)
 

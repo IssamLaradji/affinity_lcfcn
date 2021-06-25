@@ -3,11 +3,86 @@ import itertools, copy
 EXP_GROUPS = {}
 
 
+EXP_GROUPS['fish_budget'] = hu.cartesian_exp_group({
+    'batch_size': [1],
+    'num_channels': 1,
+    'dataset': [
+        # {'name': 'JcuFish', 'n_classes': 2, 'n_fish_images':15},
+        {'name': 'JcuFish', 'n_classes': 2, 'n_fish_images':10},
+        #  {'name': 'JcuFish', 'n_classes': 2, 'n_fish_images':8},
+        #   {'name': 'JcuFish', 'n_classes': 2, 'n_fish_images':6},
+    ],
+    'dataset_size': [
+        #  {'train':100, 'val':'all', 'test':'all'},
+        {'train': 'all', 'val': 'all'},
+    ],
+    'max_epoch': [1000],
+    'optimizer': ["adam"],
+    'lr': [1e-5],
+    'model':
+     [
+        {'name': 'semseg',
+         'loss': l,
+         'base': 'fcn8_vgg16',
+         'n_channels': 3, 
+         'n_classes': 2,
+         } for l in ['cross_entropy', ]]
+    ,
+})
+
+
+EXP_GROUPS['sum_shared'] = hu.cartesian_exp_group({
+    'batch_size': [1],
+    'num_channels': 1,
+    'dataset': [
+        {'name': 'SumFish', 'n_classes': 2},
+          
+
+    ],
+    'dataset_size': [
+        #  {'train':10, 'val':10, 'test':10},
+        {'train': 'all', 'val': 'all'},
+    ],
+    'max_epoch': [1000],
+    'optimizer': ["adam"],
+    'lr': [ 1e-6],
+    'version':[ None],
+    'model':
+  
+    
+     [
+        {'name': 'semseg',
+         'loss': 'lcfcn_loss',
+         'base': 'fcn8_vgg16',
+         'n_channels': 3, 
+         'n_classes': 2,
+         'with_affinity':True,
+         'shared':True,
+         'beta':beta
+        #  'with_affinity_average':True,
+         } for beta in [7]] +
+
+         [
+        {'name': 'semseg',
+         'loss': 'lcfcn_loss',
+         'base': 'fcn8_vgg16',
+         'n_channels': 3, 
+         'n_classes': 2,
+        #  'with_affinity':True,
+         'shared':True,
+        #  'with_affinity_average':True,
+         }]
+      
+        
+
+}, remove_none=True)
+
 EXP_GROUPS['fish_shared'] = hu.cartesian_exp_group({
     'batch_size': [1],
     'num_channels': 1,
     'dataset': [
         {'name': 'JcuFish', 'n_classes': 2},
+          
 
     ],
     'dataset_size': [

@@ -71,6 +71,9 @@ class SemSeg(torch.nn.Module):
         train_monitor = TrainMonitor()
     
         for batch in train_loader:
+            # for i in range(50): 
+            #     score_dict = self.train_on_batch(batch)
+            #     print(i, 'loss:', print(score_dict['train_loss']))
             score_dict = self.train_on_batch(batch)
             train_monitor.add(score_dict)
             msg = ' '.join(["%s: %.3f" % (k, v) for k,v in train_monitor.get_avg_score().items()])
